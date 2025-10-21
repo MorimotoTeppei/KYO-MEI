@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Topic } from "@/types/topic"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { Eye, MessageCircle, Heart, Bookmark, ThumbsUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -105,17 +105,6 @@ export function TopicCard({ topic }: TopicCardProps) {
 
               {/* カード本体 */}
               <div className="p-5">
-                {/* 投稿者情報 */}
-                {topic.author && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={topic.author.avatar} alt={topic.author.name} />
-                      <AvatarFallback className="text-xs">{topic.author.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-bold text-gray-700">{topic.author.name}</span>
-                  </div>
-                )}
-
                 {/* お題タイトル */}
                 <h3 className="text-lg font-black text-gray-900 leading-snug mb-3 line-clamp-2 group-hover:text-gray-700 transition-colors">
                   {topic.title}

@@ -12,7 +12,7 @@ import { SectionHeader } from "@/components/section-header"
 import { InlineCTA } from "@/components/inline-cta"
 import { ActivitySidebar } from "@/components/activity-sidebar"
 import { FloatingButtons } from "@/components/floating-buttons"
-import { Sparkles, Users, Hash } from "lucide-react"
+import { Sparkles, Hash } from "lucide-react"
 
 // サンプルデータ（拡張版）
 const activeTopics: Topic[] = [
@@ -198,9 +198,6 @@ export default function OgiriPage() {
         return allTopics.filter((topic) => topic.badge === "new")
       case "ending-soon":
         return allTopics.filter((topic) => topic.badge === "ending-soon")
-      case "following":
-        // TODO: フォロー機能実装後に対応
-        return allTopics.filter((topic) => topic.author?.name === "科学太郎") // 仮実装
       case "all":
       default:
         return allTopics
@@ -267,10 +264,6 @@ export default function OgiriPage() {
       .slice(0, 6)
   }, [allTopics])
 
-  // フォロー中のユーザーのお題（仮実装）
-  const followingTopics = useMemo(() => {
-    return allTopics.filter((topic) => topic.author?.name === "科学太郎").slice(0, 3)
-  }, [allTopics])
 
   // 人気のタグ（使用頻度でソート）
   const popularTags = useMemo(() => {
@@ -382,24 +375,7 @@ export default function OgiriPage() {
           </section>
         )}
 
-        {/* フォロー中のユーザーの新作セクション（フィルターなしの場合のみ表示） */}
-        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && followingTopics.length > 0 && (
-          <section className="pt-12 px-4 max-w-7xl mx-auto">
-            <SectionHeader icon={Users} title="フォロー中のユーザーの新作" description="あなたがフォローしているユーザーの最新お題" accentColor="#3B82F6" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {followingTopics.map((topic) => (
-                <TopicCard key={topic.id} topic={topic} />
-              ))}
-            </div>
-          </section>
-        )}
 
-        {/* CTAバナー: お題を投稿してみよう（フィルターなしの場合のみ表示） */}
-        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && (
-          <section className="pt-12 px-4 max-w-4xl mx-auto">
-            <InlineCTA type="create-topic" />
-          </section>
-        )}
 
         {/* このタグもチェックセクション（フィルターなしの場合のみ表示） */}
         {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && tagRelatedTopics.length > 0 && popularTags.length > 0 && (

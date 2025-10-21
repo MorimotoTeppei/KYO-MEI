@@ -1,3 +1,5 @@
+import type { Answer } from "./answer"
+
 export interface Topic {
   id: number
   number: number
@@ -8,8 +10,10 @@ export interface Topic {
   viewCount?: number // 閲覧数
   likeCount?: number // いいね数
   author?: {
+    id?: number
     name: string
     avatar?: string
+    topicCount?: number
   }
   tags?: string[] // タグ（最大3個）
   status: "active" | "closed" // 開催状態
@@ -21,4 +25,6 @@ export interface Topic {
     likeCount: number
   } // ベスト回答（プレビュー用）
   badge?: "trending" | "new" | "ending-soon" // バッジ種類
+  description?: string // お題の詳細説明
+  answers?: Answer[] // 回答一覧（詳細ページ用）
 }

@@ -1,322 +1,650 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
+import { Topic } from "@/types/topic"
+import { Answer } from "@/types/answer"
+import { TopicDetailCard } from "@/components/topic-detail-card"
+import { TopicTags } from "@/components/topic-tags"
+import { PinnedAnswers } from "@/components/pinned-answers"
+import { AnswerRanking } from "@/components/answer-ranking"
+import { RelatedTopics } from "@/components/related-topics"
+import { AnswerSortToggle, SortType } from "@/components/answer-sort-toggle"
+import { AnswerCard } from "@/components/answer-card"
+import { AnswerCardSkeleton } from "@/components/answer-card-skeleton"
+import { FixedCommentBar } from "@/components/fixed-comment-bar"
+import { ToastNotification } from "@/components/toast-notification"
+import { HeartConfirmDialog } from "@/components/heart-confirm-dialog"
+import { RemainingHeartsDisplay } from "@/components/remaining-hearts-display"
+import { MyAnswersSection } from "@/components/my-answers-section"
+import { AnswerConfirmDialog } from "@/components/answer-confirm-dialog"
 
-// モックデータ
-const mockTopics = [
+// モックデータ（Topic型に準拠）
+const mockTopics: Topic[] = [
   {
-    id: "1",
-    number: "042",
+    id: 1,
+    number: 42,
     subject: "物理",
-    question: "重力がなくなった世界で、物理学者が最初に言いそうなこと",
-    status: "active" as const,
-    endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2時間後
+    title: "重力がなくなった世界で、物理学者が最初に言いそうなこと",
+    description: "ある日突然、地球から重力が消えてしまいました。その瞬間、物理学者たちが思わず口にしそうな一言とは？",
+    status: "active",
     answerCount: 23,
+    viewCount: 1234,
+    likeCount: 89,
+    timeLeft: "残り2時間30分",
+    createdAt: "2時間前",
+    author: {
+      id: 1,
+      name: "科学太郎",
+      avatar: "",
+      topicCount: 15,
+    },
+    tags: ["科学", "物理学", "日常"],
+    badge: "trending",
   },
   {
-    id: "2",
-    number: "041",
+    id: 2,
+    number: 41,
     subject: "歴史",
-    question: "織田信長がスマホを持っていたら、最初に検索しそうなワード",
-    status: "ended" as const,
-    endTime: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1時間前
+    title: "織田信長がスマホを持っていたら、最初に検索しそうなワード",
+    description: "戦国時代の覇者、織田信長が現代のスマートフォンを手にしたら...",
+    status: "closed",
     answerCount: 45,
+    viewCount: 2345,
+    likeCount: 156,
+    createdAt: "1日前",
+    author: {
+      id: 7,
+      name: "歴史マニア",
+      avatar: "",
+      topicCount: 23,
+    },
+    tags: ["歴史", "戦国時代", "面白い"],
+    badge: "trending",
+  },
+  {
+    id: 3,
+    number: 40,
+    subject: "数学",
+    title: "数学者が恋愛で使いそうな口説き文句",
+    description: "数式と定理を愛する数学者が、恋愛の場面で披露する独特な口説き方とは？",
+    status: "active",
+    answerCount: 34,
+    viewCount: 987,
+    likeCount: 67,
+    timeLeft: "残り5時間",
+    createdAt: "3時間前",
+    author: {
+      id: 1,
+      name: "科学太郎",
+      avatar: "",
+      topicCount: 15,
+    },
+    tags: ["数学", "恋愛", "面白い"],
   },
 ]
 
-const mockAnswers = [
+const mockAnswers: Answer[] = [
   {
-    id: "1",
-    topicId: "1",
-    author: "浮遊する哲学者",
+    id: 1,
+    topicId: 1,
+    author: {
+      id: 2,
+      name: "浮遊する哲学者",
+      avatar: "",
+    },
     content: "「これは...重大な発見だ」",
-    hearts: 127,
+    likeCount: 127,
+    replyCount: 2,
+    createdAt: "1時間前",
+    isBestAnswer: false,
     isLiked: false,
+    replies: [
+      {
+        id: 1001,
+        answerId: 1,
+        content: "確かに重大ですね！",
+        author: {
+          id: 10,
+          name: "コメント太郎",
+          avatar: "",
+        },
+        createdAt: "30分前",
+      },
+      {
+        id: 1002,
+        answerId: 1,
+        content: "笑いました😂",
+        author: {
+          id: 11,
+          name: "笑顔の花子",
+          avatar: "",
+        },
+        createdAt: "15分前",
+      },
+    ],
   },
   {
-    id: "2",
-    topicId: "1",
-    author: "無重力の詩人",
+    id: 2,
+    topicId: 1,
+    author: {
+      id: 3,
+      name: "無重力の詩人",
+      avatar: "",
+    },
     content: "「やっと肩の荷が下りた」",
-    hearts: 89,
+    likeCount: 89,
+    replyCount: 3,
+    createdAt: "2時間前",
+    isBestAnswer: false,
     isLiked: true,
   },
   {
-    id: "3",
-    topicId: "1",
-    author: "宙に浮く数学者",
+    id: 3,
+    topicId: 1,
+    author: {
+      id: 4,
+      name: "宙に浮く数学者",
+      avatar: "",
+    },
     content: "「重力加速度g=0...つまり、私の体重も0kg！ダイエット成功！」",
-    hearts: 156,
+    likeCount: 156,
+    replyCount: 8,
+    createdAt: "3時間前",
+    isBestAnswer: false,
     isLiked: false,
   },
   {
-    id: "4",
-    topicId: "1",
-    author: "漂流する天文学者",
+    id: 4,
+    topicId: 1,
+    author: {
+      id: 5,
+      name: "漂流する天文学者",
+      avatar: "",
+    },
     content: "「地球が私を必要としなくなった」",
-    hearts: 203,
+    likeCount: 203,
+    replyCount: 12,
+    createdAt: "4時間前",
+    isBestAnswer: true,
     isLiked: false,
   },
   {
-    id: "5",
-    topicId: "1",
-    author: "空中の化学者",
+    id: 5,
+    topicId: 1,
+    author: {
+      id: 6,
+      name: "空中の化学者",
+      avatar: "",
+    },
     content: "「落下実験の結果が...出ない」",
-    hearts: 67,
+    likeCount: 67,
+    replyCount: 2,
+    createdAt: "5時間前",
+    isBestAnswer: false,
+    isLiked: false,
+  },
+  {
+    id: 6,
+    topicId: 1,
+    author: {
+      id: 7,
+      name: "重力を忘れた生物学者",
+      avatar: "",
+    },
+    content: "「進化論が...書き直しだ」",
+    likeCount: 45,
+    replyCount: 1,
+    createdAt: "6時間前",
+    isBestAnswer: false,
+    isLiked: false,
+  },
+  {
+    id: 7,
+    topicId: 1,
+    author: {
+      id: 8,
+      name: "浮遊する工学者",
+      avatar: "",
+    },
+    content: "「橋の設計、全部やり直しだ...」",
+    likeCount: 78,
+    replyCount: 4,
+    createdAt: "7時間前",
+    isBestAnswer: false,
+    isLiked: false,
+  },
+  {
+    id: 8,
+    topicId: 1,
+    author: {
+      id: 9,
+      name: "宇宙に浮かぶ地質学者",
+      avatar: "",
+    },
+    content: "「地球が平らになった気がする」",
+    likeCount: 34,
+    replyCount: 2,
+    createdAt: "8時間前",
+    isBestAnswer: false,
+    isLiked: false,
+  },
+  {
+    id: 9,
+    topicId: 1,
+    author: {
+      id: 10,
+      name: "無重力の心理学者",
+      avatar: "",
+    },
+    content: "「これで心の重荷も軽くなる...わけないか」",
+    likeCount: 92,
+    replyCount: 6,
+    createdAt: "9時間前",
+    isBestAnswer: false,
+    isLiked: false,
+  },
+  {
+    id: 10,
+    topicId: 1,
+    author: {
+      id: 11,
+      name: "漂う統計学者",
+      avatar: "",
+    },
+    content: "「有意差検定の結果...重力は有意に0です」",
+    likeCount: 56,
+    replyCount: 3,
+    createdAt: "10時間前",
+    isBestAnswer: false,
     isLiked: false,
   },
 ]
+
+// 現在のユーザーID（実際はログインユーザーから取得）
+const CURRENT_USER_ID = 999
 
 export default function TopicDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const topicId = params.id as string
+  const topicId = Number(params.id)
 
   const topic = mockTopics.find((t) => t.id === topicId)
-  const [answers, setAnswers] = useState(mockAnswers.filter((a) => a.topicId === topicId))
+  const [answers, setAnswers] = useState<Answer[]>(mockAnswers.filter((a) => a.topicId === topicId))
 
+  // State
+  const [sortType, setSortType] = useState<SortType>("likes")
+  const [displayCount, setDisplayCount] = useState(5) // 初期表示件数
+  const [isLoading, setIsLoading] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [newAnswerId, setNewAnswerId] = useState<number | null>(null)
+
+  // ハート機能の状態
   const [remainingHearts, setRemainingHearts] = useState(3)
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null)
-  const [isRemovingHeart, setIsRemovingHeart] = useState(false)
+  const [likedAnswers, setLikedAnswers] = useState<Set<number>>(new Set())
+  const [showHeartDialog, setShowHeartDialog] = useState(false)
+  const [pendingHeartAction, setPendingHeartAction] = useState<{
+    answerId: number
+    isAdding: boolean
+    answer: Answer
+  } | null>(null)
+
+  // 投稿回数の状態
+  const [remainingPosts, setRemainingPosts] = useState(3)
+
+  // 回答確認ダイアログの状態
+  const [showAnswerDialog, setShowAnswerDialog] = useState(false)
+  const [pendingAnswer, setPendingAnswer] = useState<string>("")
+
+  // 回答へのスクロール用ref
+  const answerRefs = useRef<Record<number, HTMLDivElement | null>>({})
+  const observerTarget = useRef<HTMLDivElement>(null)
+
+  // 返信処理
+  const handleReplySubmit = (answerId: number, content: string) => {
+    // 新しい返信を作成
+    const newReply = {
+      id: Date.now(), // 仮のID生成
+      answerId,
+      content,
+      author: {
+        id: CURRENT_USER_ID,
+        name: "あなた",
+        avatar: "",
+      },
+      createdAt: "たった今",
+    }
+
+    // 回答の返信リストと返信数を更新
+    setAnswers((prev) =>
+      prev.map((answer) => {
+        if (answer.id === answerId) {
+          return {
+            ...answer,
+            replies: [...(answer.replies || []), newReply],
+            replyCount: answer.replyCount + 1,
+          }
+        }
+        return answer
+      })
+    )
+  }
+
+  // ソート済み回答
+  const sortedAnswers = useMemo(() => {
+    return [...answers].sort((a, b) => {
+      if (sortType === "likes") {
+        return b.likeCount - a.likeCount
+      } else {
+        // 新着順（idが大きいほど新しいと仮定）
+        return b.id - a.id
+      }
+    })
+  }, [answers, sortType])
+
+  // 表示する回答（無限スクロール用）
+  const displayedAnswers = useMemo(() => {
+    return sortedAnswers.slice(0, displayCount)
+  }, [sortedAnswers, displayCount])
 
   if (!topic) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-2xl font-black text-black mb-4">お題が見つかりません</p>
+          <p className="text-2xl font-black text-gray-900 mb-4">お題が見つかりません</p>
           <button
             onClick={() => router.push("/")}
-            className="bg-black text-white font-bold px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+            className="bg-gradient-to-r from-[#F4C300] to-[#FFD700] text-black font-bold px-6 py-3 rounded-xl hover:from-[#FFD700] hover:to-[#F4C300] transition-all"
           >
-            大喜利ページに戻る
+            ホームに戻る
           </button>
         </div>
       </div>
     )
   }
 
-  const getTimeRemaining = () => {
-    const now = new Date()
-    const diff = topic.endTime.getTime() - now.getTime()
+  // 無限スクロール（Intersection Observer）
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoading && displayCount < sortedAnswers.length) {
+          setIsLoading(true)
+          // 遅延して次のアイテムを読み込む（実際のAPIコール風に）
+          setTimeout(() => {
+            setDisplayCount((prev) => Math.min(prev + 5, sortedAnswers.length))
+            setIsLoading(false)
+          }, 500)
+        }
+      },
+      { threshold: 0.1 }
+    )
 
-    if (diff <= 0) return "終了"
-
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-    if (hours > 0) {
-      return `残り ${hours}時間${minutes}分`
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
     }
-    return `残り ${minutes}分`
-  }
 
-  const toggleHeart = (answerId: string) => {
+    return () => observer.disconnect()
+  }, [isLoading, displayCount, sortedAnswers.length])
+
+  // ハート処理
+  const handleLikeToggle = (answerId: number, isAdding: boolean): boolean => {
     const answer = answers.find((a) => a.id === answerId)
-    if (!answer) return
+    if (!answer) return false
 
-    if (answer.isLiked) {
-      setSelectedAnswerId(answerId)
-      setIsRemovingHeart(true)
-      setShowConfirmDialog(true)
-      return
+    // ハートがない場合は追加できない
+    if (isAdding && remainingHearts === 0) {
+      return false
     }
 
-    if (remainingHearts <= 0) {
-      return
-    }
-
-    setSelectedAnswerId(answerId)
-    setIsRemovingHeart(false)
-    setShowConfirmDialog(true)
+    // 確認ダイアログを表示
+    setPendingHeartAction({ answerId, isAdding, answer })
+    setShowHeartDialog(true)
+    return false // ダイアログで確認するまで待つ
   }
 
-  const confirmHeart = () => {
-    if (!selectedAnswerId) return
+  // ハート確認
+  const handleHeartConfirm = () => {
+    if (!pendingHeartAction) return
 
-    if (isRemovingHeart) {
-      setAnswers((prev) =>
-        prev.map((a) => {
-          if (a.id === selectedAnswerId) {
-            return {
-              ...a,
-              isLiked: false,
-              hearts: a.hearts - 1,
-            }
-          }
-          return a
-        }),
-      )
-      setRemainingHearts((prev) => prev + 1)
-    } else {
-      setAnswers((prev) =>
-        prev.map((answer) => {
-          if (answer.id === selectedAnswerId) {
-            return {
-              ...answer,
-              isLiked: true,
-              hearts: answer.hearts + 1,
-            }
-          }
-          return answer
-        }),
-      )
+    const { answerId, isAdding } = pendingHeartAction
+
+    // ハート数を更新
+    if (isAdding) {
       setRemainingHearts((prev) => prev - 1)
+      setLikedAnswers((prev) => new Set(prev).add(answerId))
+    } else {
+      setRemainingHearts((prev) => prev + 1)
+      setLikedAnswers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(answerId)
+        return newSet
+      })
     }
 
-    setShowConfirmDialog(false)
-    setSelectedAnswerId(null)
-    setIsRemovingHeart(false)
+    // 回答のisLikedを更新
+    setAnswers((prev) =>
+      prev.map((a) => (a.id === answerId ? { ...a, isLiked: isAdding, likeCount: a.likeCount + (isAdding ? 1 : -1) } : a))
+    )
+
+    // ダイアログを閉じる
+    setShowHeartDialog(false)
+    setPendingHeartAction(null)
   }
 
-  const cancelHeart = () => {
-    setShowConfirmDialog(false)
-    setSelectedAnswerId(null)
-    setIsRemovingHeart(false)
+  // ハートキャンセル
+  const handleHeartCancel = () => {
+    setShowHeartDialog(false)
+    setPendingHeartAction(null)
   }
 
-  const sortedAnswers = [...answers].sort((a, b) => b.hearts - a.hearts)
+  // 回答投稿ハンドラー（確認ダイアログを表示）
+  const handleSubmitAnswer = (content: string) => {
+    // 投稿回数チェック
+    if (remainingPosts === 0) {
+      return
+    }
+
+    // 確認ダイアログを表示
+    setPendingAnswer(content)
+    setShowAnswerDialog(true)
+  }
+
+  // 回答投稿確認
+  const handleAnswerConfirm = () => {
+    // 新しい回答を作成
+    const newAnswer: Answer = {
+      id: Math.max(...answers.map((a) => a.id), 0) + 1,
+      topicId: topicId,
+      author: {
+        id: CURRENT_USER_ID,
+        name: "あなた",
+        avatar: "",
+      },
+      content: pendingAnswer,
+      likeCount: 0,
+      replyCount: 0,
+      createdAt: "たった今",
+      isBestAnswer: false,
+      isLiked: false,
+    }
+
+    // 楽観的UI更新
+    setAnswers((prev) => [newAnswer, ...prev])
+    setNewAnswerId(newAnswer.id)
+    setShowToast(true)
+
+    // 投稿回数を減らす
+    setRemainingPosts((prev) => prev - 1)
+
+    // 新着順に切り替えて、新しい回答を表示
+    setSortType("newest")
+    setDisplayCount(5)
+
+    // ダイアログを閉じる
+    setShowAnswerDialog(false)
+    setPendingAnswer("")
+
+    // 少し遅延してからスクロール
+    setTimeout(() => {
+      scrollToAnswer(newAnswer.id)
+    }, 100)
+  }
+
+  // 回答投稿キャンセル
+  const handleAnswerCancel = () => {
+    setShowAnswerDialog(false)
+    setPendingAnswer("")
+  }
+
+  // 回答へのスムーズスクロール
+  const scrollToAnswer = (answerId: number) => {
+    const element = answerRefs.current[answerId]
+    if (element) {
+      const headerOffset = 100 // ヘッダー分のオフセット
+      const elementPosition = element.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.scrollY - headerOffset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      })
+
+      // スクロール後にハイライトアニメーション
+      element.classList.add("ring-4", "ring-yellow-400")
+      setTimeout(() => {
+        element.classList.remove("ring-4", "ring-yellow-400")
+      }, 2000)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-white pb-8">
-      <div className="bg-[#F4C300] rounded-2xl p-8 md:p-12 mx-4 mt-4 md:mx-8 md:mt-8 shadow-sm relative">
-        <div className="flex justify-between items-start mb-6">
-          <span className="text-black font-bold text-sm md:text-base">#{topic.number}</span>
-          <span className="text-black font-bold text-sm md:text-base">#{topic.subject}</span>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:px-8">
+        {/* 2カラムレイアウト */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* メインコンテンツエリア */}
+          <div className="flex-1 lg:w-2/3">
+            {/* お題カード（大型） */}
+            <TopicDetailCard topic={topic} />
 
-        <h1 className="text-black font-black text-2xl md:text-4xl text-center leading-relaxed mb-8">
-          {topic.question}
-        </h1>
+            {/* タグ一覧 */}
+            <div className="mt-6">
+              <TopicTags tags={topic.tags || []} subject={topic.subject} />
+            </div>
 
-        <div className="flex justify-between items-center text-sm md:text-base">
-          <div className="flex gap-4 text-black font-bold">
-            <span>{getTimeRemaining()}</span>
-            <span>回答数: {topic.answerCount}</span>
-          </div>
-          <span
-            className={`px-3 py-1 rounded-lg font-bold text-xs md:text-sm ${
-              topic.status === "active" ? "bg-black text-white" : "bg-gray-400 text-white"
-            }`}
-          >
-            {topic.status === "active" ? "開催中" : "終了"}
-          </span>
-        </div>
-      </div>
+            {/* 残りハート数表示 */}
+            <div className="mt-6">
+              <RemainingHeartsDisplay remainingHearts={remainingHearts} />
+            </div>
 
-      <div className="mt-6 px-4 md:px-8">
-        <div className="bg-black text-white rounded-2xl p-4 flex items-center justify-between">
-          <span className="font-black text-lg md:text-xl">残りハート</span>
-          <div className="flex items-center gap-2">
-            {[...Array(3)].map((_, i) => (
-              <span key={i} className={`text-2xl md:text-3xl ${i < remainingHearts ? "" : "grayscale opacity-30"}`}>
-                ❤️
-              </span>
-            ))}
-            <span className="font-black text-xl md:text-2xl ml-2">{remainingHearts}/3</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 px-4 md:px-8">
-        <h2 className="text-black font-black text-2xl md:text-3xl mb-6 border-b-4 border-black pb-2">回答一覧</h2>
-
-        <div className="space-y-4">
-          {sortedAnswers.map((answer, index) => (
-            <div
-              key={answer.id}
-              className="bg-white border-4 border-black rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  {index < 3 && (
-                    <div className="inline-block mb-2">
-                      <span
-                        className={`px-3 py-1 rounded-lg font-black text-sm ${
-                          index === 0
-                            ? "bg-[#F4C300] text-black"
-                            : index === 1
-                              ? "bg-gray-300 text-black"
-                              : "bg-orange-200 text-black"
-                        }`}
-                      >
-                        {index + 1}位
-                      </span>
-                    </div>
-                  )}
-
-                  <p className="text-black font-bold text-sm md:text-base mb-3">{answer.author}</p>
-                  <p className="text-black font-bold text-lg md:text-xl leading-relaxed">{answer.content}</p>
-                </div>
-
-                <button
-                  onClick={() => toggleHeart(answer.id)}
-                  disabled={remainingHearts <= 0 && !answer.isLiked}
-                  className={`flex flex-col items-center gap-1 min-w-[60px] group ${
-                    remainingHearts <= 0 && !answer.isLiked ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  <div
-                    className={`text-3xl md:text-4xl transition-transform ${
-                      remainingHearts > 0 || answer.isLiked ? "group-hover:scale-110" : ""
-                    } ${answer.isLiked ? "" : "grayscale"}`}
-                  >
-                    ❤️
-                  </div>
-                  <span className="text-black font-black text-sm md:text-base">{answer.hearts}</span>
-                </button>
+            {/* ピン留め回答 */}
+            {answers.length > 0 && (
+              <div className="mt-6">
+                <PinnedAnswers answers={answers} onAnswerClick={scrollToAnswer} />
               </div>
-            </div>
-          ))}
-        </div>
+            )}
 
-        {sortedAnswers.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-black font-bold text-lg">まだ回答がありません</p>
-            <p className="text-gray-600 font-bold text-sm mt-2">最初の回答者になりましょう！</p>
+            {/* あなたの回答セクション */}
+            <div className="mt-6">
+              <MyAnswersSection
+                myAnswers={answers}
+                onLikeToggle={handleLikeToggle}
+                remainingHearts={remainingHearts}
+                currentUserId={CURRENT_USER_ID}
+                onReplySubmit={handleReplySubmit}
+              />
+            </div>
+
+            {/* 回答一覧セクション */}
+            <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
+              {/* ソート機能 */}
+              <AnswerSortToggle currentSort={sortType} onSortChange={setSortType} answerCount={answers.length} />
+
+              {/* 回答リスト */}
+              <div className="space-y-4">
+                {displayedAnswers.map((answer, index) => (
+                  <AnswerCard
+                    key={answer.id}
+                    answer={answer}
+                    rank={sortType === "likes" ? index + 1 : undefined}
+                    onLikeToggle={handleLikeToggle}
+                    remainingHearts={remainingHearts}
+                    currentUserId={CURRENT_USER_ID}
+                    onReplySubmit={handleReplySubmit}
+                    ref={(el) => {
+                      answerRefs.current[answer.id] = el
+                    }}
+                  />
+                ))}
+
+                {/* ローディングスケルトン */}
+                {isLoading &&
+                  Array.from({ length: 3 }).map((_, i) => <AnswerCardSkeleton key={`skeleton-${i}`} />)}
+
+                {/* Intersection Observerのターゲット */}
+                {displayCount < sortedAnswers.length && <div ref={observerTarget} className="h-10" />}
+              </div>
+
+              {/* 空の状態 */}
+              {answers.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-lg font-bold text-gray-600">まだ回答がありません</p>
+                  <p className="text-sm text-gray-500 mt-2">最初の回答者になりましょう！</p>
+                </div>
+              )}
+
+              {/* 全件表示済み */}
+              {answers.length > 0 && displayCount >= sortedAnswers.length && (
+                <div className="text-center py-6 text-sm text-gray-500 font-bold">すべての回答を表示しました</div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* サイドバー（デスクトップのみ） */}
+          <aside className="w-full lg:w-1/3 space-y-6">
+            {/* 回答者ランキング */}
+            {answers.length > 0 && <AnswerRanking answers={answers} />}
+
+            {/* 関連お題 */}
+            <RelatedTopics
+              currentTopicId={topic.id}
+              currentTags={topic.tags}
+              currentAuthorId={topic.author?.id}
+              allTopics={mockTopics}
+            />
+          </aside>
+        </div>
       </div>
 
-      {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full border-4 border-black shadow-lg">
-            <h3 className="text-black font-black text-2xl mb-4 text-center">
-              {isRemovingHeart ? "ハートを取り消しますか？" : "ハートを送りますか？"}
-            </h3>
-            <p className="text-black font-bold text-center mb-6">
-              {isRemovingHeart ? (
-                <>
-                  この回答からハートを取り消します。
-                  <br />
-                  残りハート: {remainingHearts + 1}/3
-                </>
-              ) : (
-                <>
-                  この回答にハートを送ります。
-                  <br />
-                  残りハート: {remainingHearts - 1}/3
-                </>
-              )}
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={cancelHeart}
-                className="flex-1 bg-white text-black border-4 border-black font-black text-lg py-3 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={confirmHeart}
-                className="flex-1 bg-[#F4C300] text-black font-black text-lg py-3 rounded-xl hover:bg-[#e0b300] transition-colors border-4 border-black"
-              >
-                {isRemovingHeart ? "取り消す" : "送る"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Toast通知 */}
+      {showToast && (
+        <ToastNotification message="回答を投稿しました！" onClose={() => setShowToast(false)} />
       )}
+
+      {/* ハート確認ダイアログ */}
+      {pendingHeartAction && (
+        <HeartConfirmDialog
+          isOpen={showHeartDialog}
+          onConfirm={handleHeartConfirm}
+          onCancel={handleHeartCancel}
+          isRemoving={!pendingHeartAction.isAdding}
+          remainingHearts={remainingHearts}
+          answerAuthor={pendingHeartAction.answer.author.name}
+          answerPreview={pendingHeartAction.answer.content}
+        />
+      )}
+
+      {/* 回答確認ダイアログ */}
+      <AnswerConfirmDialog
+        isOpen={showAnswerDialog}
+        onConfirm={handleAnswerConfirm}
+        onCancel={handleAnswerCancel}
+        answerPreview={pendingAnswer}
+        remainingPosts={remainingPosts - 1}
+      />
+
+      {/* 固定コメント投稿バー */}
+      <FixedCommentBar onSubmit={handleSubmitAnswer} isLoggedIn={true} remainingPosts={remainingPosts} />
     </div>
   )
 }
