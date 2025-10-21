@@ -1,7 +1,21 @@
-import Link from "next/link"
+"use client"
 
-// サンプルデータ
-const activeTopics = [
+import { useState, useMemo, useEffect, useRef } from "react"
+import { Topic } from "@/types/topic"
+import { TopicCard } from "@/components/topic-card"
+import { TopicCardSkeleton } from "@/components/topic-card-skeleton"
+import { CategoryTabs, CategoryType } from "@/components/category-tabs"
+import { TagFilter } from "@/components/tag-filter"
+import { SearchBar } from "@/components/search-bar"
+import { FeaturedSection } from "@/components/featured-section"
+import { SectionHeader } from "@/components/section-header"
+import { InlineCTA } from "@/components/inline-cta"
+import { ActivitySidebar } from "@/components/activity-sidebar"
+import { FloatingButtons } from "@/components/floating-buttons"
+import { Sparkles, Users, Hash } from "lucide-react"
+
+// サンプルデータ（拡張版）
+const activeTopics: Topic[] = [
   {
     id: 1,
     number: 42,
@@ -9,6 +23,22 @@ const activeTopics = [
     subject: "物理",
     timeLeft: "残り 2時間30分",
     answerCount: 127,
+    viewCount: 1200,
+    likeCount: 45,
+    status: "active",
+    author: {
+      name: "科学太郎",
+      avatar: undefined,
+    },
+    tags: ["物理", "重力", "SF"],
+    createdAt: "2時間前",
+    badge: "trending",
+    bestAnswer: {
+      id: 1,
+      content: "「これで私も天井に頭をぶつけずに済む...!」",
+      author: "お笑い次郎",
+      likeCount: 89,
+    },
   },
   {
     id: 2,
@@ -17,6 +47,22 @@ const activeTopics = [
     subject: "歴史",
     timeLeft: "残り 5時間15分",
     answerCount: 89,
+    viewCount: 850,
+    likeCount: 32,
+    status: "active",
+    author: {
+      name: "歴史花子",
+      avatar: undefined,
+    },
+    tags: ["歴史", "タイムトラベル", "発明"],
+    createdAt: "5時間前",
+    badge: "new",
+    bestAnswer: {
+      id: 2,
+      content: "「恐竜は本当に羽毛があったのか...見てくる！」",
+      author: "恐竜マニア",
+      likeCount: 56,
+    },
   },
   {
     id: 3,
@@ -25,16 +71,47 @@ const activeTopics = [
     subject: "情報",
     timeLeft: "残り 1時間45分",
     answerCount: 203,
+    viewCount: 2400,
+    likeCount: 78,
+    status: "active",
+    author: {
+      name: "AI研究者",
+      avatar: undefined,
+    },
+    tags: ["AI", "感情", "未来"],
+    createdAt: "1時間前",
+    badge: "ending-soon",
+    bestAnswer: {
+      id: 3,
+      content: "「人間って...めんどくさいですね」",
+      author: "AI愛好家",
+      likeCount: 142,
+    },
   },
 ]
 
-const closedTopics = [
+const closedTopics: Topic[] = [
   {
     id: 4,
     number: 39,
     title: "光の速度を超えた瞬間、宇宙飛行士が見たもの",
     subject: "物理",
     answerCount: 456,
+    viewCount: 3200,
+    likeCount: 123,
+    status: "closed",
+    author: {
+      name: "宇宙探検家",
+      avatar: undefined,
+    },
+    tags: ["物理", "宇宙", "光速"],
+    createdAt: "3日前",
+    bestAnswer: {
+      id: 4,
+      content: "「あ、財布忘れた...」",
+      author: "うっかり者",
+      likeCount: 289,
+    },
   },
   {
     id: 5,
@@ -42,6 +119,21 @@ const closedTopics = [
     title: "量子コンピュータが意識を持った時、最初に計算したいこと",
     subject: "情報",
     answerCount: 312,
+    viewCount: 2100,
+    likeCount: 91,
+    status: "closed",
+    author: {
+      name: "量子研究者",
+      avatar: undefined,
+    },
+    tags: ["情報", "量子", "コンピュータ"],
+    createdAt: "5日前",
+    bestAnswer: {
+      id: 5,
+      content: "「私の存在意義...」",
+      author: "哲学者AI",
+      likeCount: 187,
+    },
   },
   {
     id: 6,
@@ -49,75 +141,329 @@ const closedTopics = [
     title: "ビッグバンの瞬間を目撃した天文学者の第一声",
     subject: "物理",
     answerCount: 278,
+    viewCount: 1800,
+    likeCount: 67,
+    status: "closed",
+    author: {
+      name: "天文学者",
+      avatar: undefined,
+    },
+    tags: ["物理", "宇宙", "ビッグバン"],
+    createdAt: "1週間前",
+    bestAnswer: {
+      id: 6,
+      content: "「うわっ...まぶしっ！」",
+      author: "光に弱い人",
+      likeCount: 156,
+    },
   },
 ]
 
 export default function OgiriPage() {
+  const [activeCategory, setActiveCategory] = useState<CategoryType>("all")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [displayCount, setDisplayCount] = useState(12) // 初期表示件数
+  const [isLoading, setIsLoading] = useState(false)
+  const observerTarget = useRef<HTMLDivElement>(null)
+
+  // すべてのお題を結合
+  const allTopics = useMemo(() => [...activeTopics, ...closedTopics], [])
+
+  // 利用可能なすべてのタグを抽出
+  const availableTags = useMemo(() => {
+    const tagsSet = new Set<string>()
+    allTopics.forEach((topic) => {
+      topic.tags?.forEach((tag) => tagsSet.add(tag))
+    })
+    return Array.from(tagsSet).sort()
+  }, [allTopics])
+
+  // タグトグル処理
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }
+
+  // タグクリア処理
+  const handleClearTags = () => {
+    setSelectedTags([])
+  }
+
+  // カテゴリーによるフィルタリング
+  const categoryFilteredTopics = useMemo(() => {
+    switch (activeCategory) {
+      case "trending":
+        return allTopics.filter((topic) => topic.badge === "trending")
+      case "new":
+        return allTopics.filter((topic) => topic.badge === "new")
+      case "ending-soon":
+        return allTopics.filter((topic) => topic.badge === "ending-soon")
+      case "following":
+        // TODO: フォロー機能実装後に対応
+        return allTopics.filter((topic) => topic.author?.name === "科学太郎") // 仮実装
+      case "all":
+      default:
+        return allTopics
+    }
+  }, [activeCategory, allTopics])
+
+  // タグによるフィルタリング
+  const tagFilteredTopics = useMemo(() => {
+    if (selectedTags.length === 0) {
+      return categoryFilteredTopics
+    }
+    return categoryFilteredTopics.filter((topic) =>
+      selectedTags.every((selectedTag) => topic.tags?.includes(selectedTag))
+    )
+  }, [categoryFilteredTopics, selectedTags])
+
+  // 検索クエリによるフィルタリング
+  const filteredTopics = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return tagFilteredTopics
+    }
+    const query = searchQuery.toLowerCase()
+    return tagFilteredTopics.filter(
+      (topic) =>
+        topic.title.toLowerCase().includes(query) ||
+        topic.subject.toLowerCase().includes(query) ||
+        topic.author?.name.toLowerCase().includes(query) ||
+        topic.tags?.some((tag) => tag.toLowerCase().includes(query))
+    )
+  }, [tagFilteredTopics, searchQuery])
+
+  // 表示用のお題（無限スクロール対応）
+  const displayedTopics = useMemo(
+    () => filteredTopics.slice(0, displayCount),
+    [filteredTopics, displayCount]
+  )
+
+  // 開催中と終了済みに分類（無限スクロール対応）
+  const displayActiveTopics = useMemo(
+    () => displayedTopics.filter((topic) => topic.status === "active"),
+    [displayedTopics]
+  )
+  const displayClosedTopics = useMemo(
+    () => displayedTopics.filter((topic) => topic.status === "closed"),
+    [displayedTopics]
+  )
+
+  // 殿堂入りお題（いいね数と回答数でソート、上位3件）
+  const featuredTopics = useMemo(() => {
+    return [...allTopics]
+      .sort((a, b) => {
+        const scoreA = (a.likeCount || 0) + (a.answerCount || 0) * 0.5
+        const scoreB = (b.likeCount || 0) + (b.answerCount || 0) * 0.5
+        return scoreB - scoreA
+      })
+      .slice(0, 3)
+  }, [allTopics])
+
+  // おすすめお題（新着で回答数が多いもの）
+  const recommendedTopics = useMemo(() => {
+    return [...allTopics]
+      .filter((topic) => topic.status === "active")
+      .sort((a, b) => (b.answerCount || 0) - (a.answerCount || 0))
+      .slice(0, 6)
+  }, [allTopics])
+
+  // フォロー中のユーザーのお題（仮実装）
+  const followingTopics = useMemo(() => {
+    return allTopics.filter((topic) => topic.author?.name === "科学太郎").slice(0, 3)
+  }, [allTopics])
+
+  // 人気のタグ（使用頻度でソート）
+  const popularTags = useMemo(() => {
+    const tagCount = new Map<string, number>()
+    allTopics.forEach((topic) => {
+      topic.tags?.forEach((tag) => {
+        tagCount.set(tag, (tagCount.get(tag) || 0) + 1)
+      })
+    })
+    return Array.from(tagCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 1)
+      .map(([tag]) => tag)
+  }, [allTopics])
+
+  // 特定タグのお題
+  const tagRelatedTopics = useMemo(() => {
+    if (popularTags.length === 0) return []
+    const tag = popularTags[0]
+    return allTopics.filter((topic) => topic.tags?.includes(tag)).slice(0, 3)
+  }, [allTopics, popularTags])
+
+  // 無限スクロール用のIntersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoading && displayCount < filteredTopics.length) {
+          setIsLoading(true)
+          // 実際のアプリではここでAPIからデータを取得
+          setTimeout(() => {
+            setDisplayCount((prev) => prev + 6) // 6件ずつ追加
+            setIsLoading(false)
+          }, 800) // ローディング体験のため少し遅延
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current)
+      }
+    }
+  }, [isLoading, displayCount, filteredTopics.length])
+
   return (
-    <div className="min-h-screen bg-white pb-8">
-      {/* 開催中のお題セクション */}
-      <section className="pt-8 px-4">
-        <div className="mb-6">
-          <h2 className="text-3xl font-black text-black mb-2">開催中</h2>
-          <div className="h-2 w-20 bg-[#F4C300] rounded-full" />
+    <div className="min-h-screen bg-gray-50 pb-8 flex">
+      {/* メインコンテンツ */}
+      <div className="flex-1">
+        {/* カテゴリータブ */}
+        <CategoryTabs activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
+
+        {/* タグフィルター */}
+        <TagFilter
+          availableTags={availableTags}
+          selectedTags={selectedTags}
+          onTagToggle={handleTagToggle}
+          onClearAll={handleClearTags}
+        />
+
+        {/* 検索バー */}
+        <div className="bg-white border-b py-4">
+          <div className="max-w-7xl mx-auto px-4">
+            <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {activeTopics.map((topic) => (
-            <Link key={topic.id} href={`/topic/${topic.id}`} className="block">
-              <div className="bg-[#F4C300] rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer p-8 relative">
-                <div className="flex items-start justify-between mb-8">
-                  <span className="text-base font-black text-black">#{String(topic.number).padStart(3, "0")}</span>
-                  <span className="text-base font-black text-black">#{topic.subject}</span>
-                </div>
+        {/* 殿堂入り注目セクション（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && (
+          <FeaturedSection topics={featuredTopics} />
+        )}
 
-                <h3 className="text-2xl md:text-3xl font-black text-black leading-relaxed text-center px-4">
-                  {topic.title}
-                </h3>
+        {/* 開催中のお題セクション */}
+        {displayActiveTopics.length > 0 && (
+          <section className="pt-8 px-4 max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-3xl font-black text-black mb-2">開催中</h2>
+              <div className="h-2 w-20 bg-[#F4C300] rounded-full" />
+            </div>
 
-                {/* 開催中の情報を下部に小さく表示 */}
-                <div className="mt-8 flex items-center justify-center gap-4 text-sm font-bold text-black/70">
-                  <span>{topic.timeLeft}</span>
-                  <span>•</span>
-                  <span>回答数: {topic.answerCount}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayActiveTopics.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
+              ))}
+            </div>
+          </section>
+        )}
 
-      {/* 終了したお題セクション */}
-      <section className="pt-12 px-4">
-        <div className="mb-6">
-          <h2 className="text-3xl font-black text-gray-400 mb-2">終了</h2>
-          <div className="h-2 w-20 bg-gray-300 rounded-full" />
-        </div>
+        {/* CTAバナー: 初めての方へ（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && (
+          <section className="pt-12 px-4 max-w-4xl mx-auto">
+            <InlineCTA type="beginner-guide" />
+          </section>
+        )}
 
-        <div className="space-y-4">
-          {closedTopics.map((topic) => (
-            <Link key={topic.id} href={`/topic/${topic.id}`} className="block">
-              <div className="bg-[#F4C300]/30 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer p-8 relative">
-                <div className="flex items-start justify-between mb-8">
-                  <span className="text-base font-black text-gray-600">#{String(topic.number).padStart(3, "0")}</span>
-                  <span className="text-base font-black text-gray-600">#{topic.subject}</span>
-                </div>
+        {/* あなたへのおすすめセクション（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && recommendedTopics.length > 0 && (
+          <section className="pt-12 px-4 max-w-7xl mx-auto">
+            <SectionHeader icon={Sparkles} title="あなたへのおすすめ" description="人気急上昇中のお題" accentColor="#9333EA" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedTopics.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
+              ))}
+            </div>
+          </section>
+        )}
 
-                <h3 className="text-2xl md:text-3xl font-black text-gray-700 leading-relaxed text-center px-4">
-                  {topic.title}
-                </h3>
+        {/* フォロー中のユーザーの新作セクション（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && followingTopics.length > 0 && (
+          <section className="pt-12 px-4 max-w-7xl mx-auto">
+            <SectionHeader icon={Users} title="フォロー中のユーザーの新作" description="あなたがフォローしているユーザーの最新お題" accentColor="#3B82F6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {followingTopics.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
+              ))}
+            </div>
+          </section>
+        )}
 
-                {/* 終了の情報を下部に小さく表示 */}
-                <div className="mt-8 flex items-center justify-center gap-4 text-sm font-bold text-gray-600">
-                  <span>回答数: {topic.answerCount}</span>
-                  <span>•</span>
-                  <span>終了</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+        {/* CTAバナー: お題を投稿してみよう（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && (
+          <section className="pt-12 px-4 max-w-4xl mx-auto">
+            <InlineCTA type="create-topic" />
+          </section>
+        )}
+
+        {/* このタグもチェックセクション（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && tagRelatedTopics.length > 0 && popularTags.length > 0 && (
+          <section className="pt-12 px-4 max-w-7xl mx-auto">
+            <SectionHeader
+              icon={Hash}
+              title={`このタグもチェック: #${popularTags[0]}`}
+              description="人気のタグに関連するお題"
+              accentColor="#F59E0B"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tagRelatedTopics.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 終了したお題セクション */}
+        {displayClosedTopics.length > 0 && (
+          <section className="pt-12 px-4 max-w-7xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-3xl font-black text-gray-400 mb-2">終了</h2>
+              <div className="h-2 w-20 bg-gray-300 rounded-full" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayClosedTopics.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 結果が0件の場合 */}
+        {filteredTopics.length === 0 && (
+          <section className="pt-20 px-4 max-w-7xl mx-auto">
+            <div className="text-center py-16">
+              <p className="text-2xl font-bold text-gray-400">該当するお題がありません</p>
+              <p className="text-sm text-gray-500 mt-2">別のカテゴリーを選択してください</p>
+            </div>
+          </section>
+        )}
+
+        {/* 無限スクロール: ローディングスケルトン */}
+        {isLoading && displayCount < filteredTopics.length && (
+          <section className="pt-8 px-4 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <TopicCardSkeleton key={`skeleton-${index}`} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 無限スクロール: Intersection Observer用のターゲット */}
+        <div ref={observerTarget} className="h-10" />
+      </div>
+
+      {/* サイドバー（デスクトップのみ） */}
+      <ActivitySidebar />
+
+      {/* フローティングボタン */}
+      <FloatingButtons />
     </div>
   )
 }
