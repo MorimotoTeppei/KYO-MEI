@@ -1,13 +1,11 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { Topic } from "@/types/topic"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
-import { Eye, MessageCircle, Heart, Bookmark, ThumbsUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Eye, MessageCircle, Heart, ThumbsUp } from "lucide-react"
 
 interface TopicCardProps {
   topic: Topic
@@ -42,44 +40,35 @@ const getBadgeContent = (badge?: Topic["badge"]) => {
 }
 
 export function TopicCard({ topic }: TopicCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
-  const [isBookmarked, setIsBookmarked] = useState(false)
-
   const badgeContent = getBadgeContent(topic.badge)
   const isActive = topic.status === "active"
   const subjectColor = getSubjectColor(topic.subject)
 
-  const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsLiked(!isLiked)
-  }
-
-  const handleBookmark = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsBookmarked(!isBookmarked)
-  }
-
   return (
     <HoverCard openDelay={300} closeDelay={100}>
       <HoverCardTrigger asChild>
-        <div
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-        >
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Link href={`/topic/${topic.id}`} className="block group">
             <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative">
               {/* サムネイル部分 */}
               <div className={`relative h-32 ${subjectColor} flex items-center justify-center`}>
-                {/* バッジ表示（左上） */}
-                {badgeContent && (
-                  <div className="absolute top-3 left-3">
+                {/* ステータスタグ（左上） */}
+                <div className="absolute top-3 left-3 flex gap-2">
+                  {isActive ? (
+                    <Badge className="bg-green-500 text-white font-bold text-xs px-3 py-1">
+                      開催中
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-gray-500 text-white font-bold text-xs px-3 py-1">
+                      終了
+                    </Badge>
+                  )}
+                  {badgeContent && (
                     <Badge className={`${badgeContent.className} font-bold text-xs px-3 py-1`}>
                       {badgeContent.text}
                     </Badge>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* 統計情報（右上） */}
                 <div className="absolute top-3 right-3 flex gap-3 text-white text-sm font-bold">
@@ -105,17 +94,6 @@ export function TopicCard({ topic }: TopicCardProps) {
 
               {/* カード本体 */}
               <div className="p-5">
-                {/* 投稿者情報 */}
-                {topic.author && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={topic.author.avatar} alt={topic.author.name} />
-                      <AvatarFallback className="text-xs">{topic.author.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-bold text-gray-700">{topic.author.name}</span>
-                  </div>
-                )}
-
                 {/* お題タイトル */}
                 <h3 className="text-lg font-black text-gray-900 leading-snug mb-3 line-clamp-2 group-hover:text-gray-700 transition-colors">
                   {topic.title}
@@ -139,12 +117,6 @@ export function TopicCard({ topic }: TopicCardProps) {
                 <div className="flex items-center justify-between text-xs font-bold text-gray-500">
                   <div className="flex items-center gap-2">
                     <span>回答 {topic.answerCount}件</span>
-                    {topic.createdAt && (
-                      <>
-                        <span>•</span>
-                        <span>{topic.createdAt}</span>
-                      </>
-                    )}
                   </div>
 
                   {/* いいね数 */}
@@ -156,35 +128,15 @@ export function TopicCard({ topic }: TopicCardProps) {
                   )}
                 </div>
 
-                {/* 開催中の残り時間 */}
-                {isActive && topic.timeLeft && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <span className="text-xs font-bold text-orange-600">{topic.timeLeft}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* ホバー時のクイックアクションボタン */}
-              {isHovered && (
-                <div className="absolute bottom-4 right-4 flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <Button
-                    size="sm"
-                    variant={isLiked ? "default" : "secondary"}
-                    className="shadow-lg"
-                    onClick={handleLike}
-                  >
-                    <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={isBookmarked ? "default" : "secondary"}
-                    className="shadow-lg"
-                    onClick={handleBookmark}
-                  >
-                    <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
-                  </Button>
+                {/* 時間表示 */}
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  {isActive && topic.timeLeft ? (
+                    <span className="text-xs font-bold text-orange-600">⏰ {topic.timeLeft}</span>
+                  ) : topic.createdAt ? (
+                    <span className="text-xs font-bold text-gray-500">終了: {topic.createdAt}</span>
+                  ) : null}
                 </div>
-              )}
+              </div>
             </div>
           </Link>
         </div>
