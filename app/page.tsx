@@ -235,26 +235,16 @@ export default function OgiriPage() {
     [filteredTopics, displayCount]
   )
 
-  // 開催中と終了済みに分類（無限スクロール対応）
-  const displayActiveTopics = useMemo(
-    () => displayedTopics.filter((topic) => topic.status === "active"),
-    [displayedTopics]
-  )
+  // 終了済みお題（無限スクロール対応）
   const displayClosedTopics = useMemo(
     () => displayedTopics.filter((topic) => topic.status === "closed"),
     [displayedTopics]
   )
 
-  // 殿堂入りお題（いいね数と回答数でソート、上位3件）
+  // 注目の開催中お題（開催中のお題から上位3件）
   const featuredTopics = useMemo(() => {
-    return [...allTopics]
-      .sort((a, b) => {
-        const scoreA = (a.likeCount || 0) + (a.answerCount || 0) * 0.5
-        const scoreB = (b.likeCount || 0) + (b.answerCount || 0) * 0.5
-        return scoreB - scoreA
-      })
-      .slice(0, 3)
-  }, [allTopics])
+    return activeTopics.slice(0, 3)
+  }, [])
 
   // おすすめお題（新着で回答数が多いもの）
   const recommendedTopics = useMemo(() => {
@@ -340,16 +330,17 @@ export default function OgiriPage() {
           <FeaturedSection topics={featuredTopics} />
         )}
 
-        {/* 開催中のお題セクション */}
-        {displayActiveTopics.length > 0 && (
-          <section className="pt-8 px-4 max-w-7xl mx-auto">
-            <div className="mb-6">
-              <h2 className="text-3xl font-black text-black mb-2">開催中</h2>
-              <div className="h-2 w-20 bg-[#F4C300] rounded-full" />
-            </div>
-
+        {/* このタグもチェックセクション（フィルターなしの場合のみ表示） */}
+        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && tagRelatedTopics.length > 0 && popularTags.length > 0 && (
+          <section className="pt-12 px-4 max-w-7xl mx-auto">
+            <SectionHeader
+              icon={Hash}
+              title={`このタグもチェック: #${popularTags[0]}`}
+              description="人気のタグに関連するお題"
+              accentColor="#F59E0B"
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayActiveTopics.map((topic) => (
+              {tagRelatedTopics.map((topic) => (
                 <TopicCard key={topic.id} topic={topic} />
               ))}
             </div>
@@ -369,25 +360,6 @@ export default function OgiriPage() {
             <SectionHeader icon={Sparkles} title="あなたへのおすすめ" description="人気急上昇中のお題" accentColor="#9333EA" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendedTopics.map((topic) => (
-                <TopicCard key={topic.id} topic={topic} />
-              ))}
-            </div>
-          </section>
-        )}
-
-
-
-        {/* このタグもチェックセクション（フィルターなしの場合のみ表示） */}
-        {activeCategory === "all" && selectedTags.length === 0 && !searchQuery && tagRelatedTopics.length > 0 && popularTags.length > 0 && (
-          <section className="pt-12 px-4 max-w-7xl mx-auto">
-            <SectionHeader
-              icon={Hash}
-              title={`このタグもチェック: #${popularTags[0]}`}
-              description="人気のタグに関連するお題"
-              accentColor="#F59E0B"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tagRelatedTopics.map((topic) => (
                 <TopicCard key={topic.id} topic={topic} />
               ))}
             </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -9,11 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, RefreshCw, User } from "lucide-react"
+import { generateAnonymousName } from "@/lib/anonymous-names"
 
 interface AnswerConfirmDialogProps {
   isOpen: boolean
-  onConfirm: () => void
+  onConfirm: (anonymousName: string) => void
   onCancel: () => void
   answerPreview: string
   remainingPosts: number
@@ -26,6 +28,25 @@ export function AnswerConfirmDialog({
   answerPreview,
   remainingPosts,
 }: AnswerConfirmDialogProps) {
+  const [anonymousName, setAnonymousName] = useState("")
+
+  // ダイアログが開かれたときに匿名名を生成
+  useEffect(() => {
+    if (isOpen) {
+      setAnonymousName(generateAnonymousName())
+    }
+  }, [isOpen])
+
+  // 匿名名を再生成
+  const handleRefreshName = () => {
+    setAnonymousName(generateAnonymousName())
+  }
+
+  // 投稿確定
+  const handleConfirm = () => {
+    onConfirm(anonymousName)
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="sm:max-w-[500px]">
@@ -38,6 +59,31 @@ export function AnswerConfirmDialog({
             投稿した回答は削除できません。内容をよく確認してください。
           </DialogDescription>
         </DialogHeader>
+
+        {/* 匿名名表示 */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-blue-600" />
+              <div>
+                <p className="text-xs text-gray-600 font-medium">投稿者名（匿名）</p>
+                <p className="text-lg font-black text-gray-900">{anonymousName}</p>
+              </div>
+            </div>
+            <Button
+              onClick={handleRefreshName}
+              variant="outline"
+              size="sm"
+              className="border-2 border-blue-300 hover:bg-blue-100 font-bold"
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              変更
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            この名前で投稿されます。気に入らない場合は変更できます。
+          </p>
+        </div>
 
         {/* 回答プレビュー */}
         <div className="my-4">
@@ -68,7 +114,7 @@ export function AnswerConfirmDialog({
             キャンセル
           </Button>
           <Button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             className="bg-gradient-to-r from-[#F4C300] to-[#FFD700] hover:from-[#FFD700] hover:to-[#F4C300] text-black font-bold"
           >
             投稿する

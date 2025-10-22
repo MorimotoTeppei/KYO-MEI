@@ -450,14 +450,14 @@ export default function TopicDetailPage() {
   }
 
   // 回答投稿確認
-  const handleAnswerConfirm = () => {
+  const handleAnswerConfirm = (anonymousName: string) => {
     // 新しい回答を作成
     const newAnswer: Answer = {
       id: Math.max(...answers.map((a) => a.id), 0) + 1,
       topicId: topicId,
       author: {
         id: CURRENT_USER_ID,
-        name: "あなた",
+        name: anonymousName,
         avatar: "",
       },
       content: pendingAnswer,

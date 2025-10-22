@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { Topic } from "@/types/topic"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Eye, MessageCircle, Heart, TrendingUp } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 interface FeaturedSectionProps {
@@ -33,7 +33,7 @@ export function FeaturedSection({ topics }: FeaturedSectionProps) {
         {/* ヘッダー */}
         <div className="flex items-center gap-3 mb-6">
           <TrendingUp className="w-8 h-8 text-[#F4C300]" />
-          <h2 className="text-3xl font-black text-white">今週の殿堂入り大喜利</h2>
+          <h2 className="text-3xl font-black text-white">開催中</h2>
         </div>
 
         {/* カルーセル */}
@@ -50,9 +50,22 @@ export function FeaturedSection({ topics }: FeaturedSectionProps) {
               return (
                 <CarouselItem key={topic.id} className="md:basis-1/2 lg:basis-1/3">
                   <Link href={`/topic/${topic.id}`} className="block group">
-                    <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden h-full">
+                    <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden h-full">
                       {/* 大きなサムネイル */}
                       <div className={`relative h-48 bg-gradient-to-br ${subjectGradient} flex flex-col items-center justify-center p-6`}>
+                        {/* ステータスタグ（左上） */}
+                        <div className="absolute top-4 left-4">
+                          {topic.status === "active" ? (
+                            <Badge className="bg-green-500 text-white font-bold text-xs px-3 py-1">
+                              開催中
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-500 text-white font-bold text-xs px-3 py-1">
+                              終了
+                            </Badge>
+                          )}
+                        </div>
+
                         {/* 統計情報（右上） */}
                         <div className="absolute top-4 right-4 flex flex-col gap-2 text-white text-sm font-bold">
                           {topic.viewCount !== undefined && (
@@ -84,17 +97,6 @@ export function FeaturedSection({ topics }: FeaturedSectionProps) {
 
                       {/* カード本体 */}
                       <div className="p-6">
-                        {/* 投稿者情報 */}
-                        {topic.author && (
-                          <div className="flex items-center gap-2 mb-4">
-                            <Avatar className="w-7 h-7">
-                              <AvatarImage src={topic.author.avatar} alt={topic.author.name} />
-                              <AvatarFallback className="text-xs">{topic.author.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-bold text-gray-700">{topic.author.name}</span>
-                          </div>
-                        )}
-
                         {/* お題タイトル */}
                         <h3 className="text-xl font-black text-gray-900 leading-snug mb-4 line-clamp-3 group-hover:text-gray-700 transition-colors">
                           {topic.title}
@@ -102,7 +104,7 @@ export function FeaturedSection({ topics }: FeaturedSectionProps) {
 
                         {/* ベスト回答プレビュー */}
                         {topic.bestAnswer && (
-                          <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-[#F4C300]">
+                          <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-[#F4C300] mb-4">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-xs font-black text-gray-600">ベスト回答</span>
                               <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -115,6 +117,15 @@ export function FeaturedSection({ topics }: FeaturedSectionProps) {
                             </p>
                           </div>
                         )}
+
+                        {/* 時間表示 */}
+                        <div className="pt-3 border-t border-gray-100">
+                          {topic.status === "active" && topic.timeLeft ? (
+                            <span className="text-xs font-bold text-orange-600">⏰ {topic.timeLeft}</span>
+                          ) : topic.createdAt ? (
+                            <span className="text-xs font-bold text-gray-500">終了: {topic.createdAt}</span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </Link>
