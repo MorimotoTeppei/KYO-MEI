@@ -8,7 +8,6 @@ export function HeaderNavigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const tabs = [
-    { id: "新規投稿", label: "新規投稿", href: "/post" },
     { id: "大喜利", label: "大喜利", href: "/" },
     { id: "設定", label: "設定", href: "/settings" },
   ]
@@ -27,13 +26,9 @@ export function HeaderNavigation() {
               key={tab.id}
               href={tab.href}
               className={`px-4 lg:px-6 py-2 rounded-xl font-black text-sm lg:text-base transition-all ${
-                tab.id === "新規投稿"
-                  ? pathname === tab.href
-                    ? "bg-black text-[#F4C300] shadow-md"
-                    : "bg-[#F4C300] text-black hover:bg-black hover:text-[#F4C300] shadow-sm"
-                  : pathname === tab.href
-                    ? "bg-black text-white"
-                    : "bg-white text-black border-2 border-black hover:bg-black hover:text-white"
+                pathname === tab.href
+                  ? "bg-black text-white"
+                  : "bg-white text-black border-2 border-black hover:bg-black hover:text-white"
               }`}
             >
               {tab.label}
@@ -67,13 +62,9 @@ export function HeaderNavigation() {
                 href={tab.href}
                 onClick={() => setIsMenuOpen(false)}
                 className={`px-6 py-3 rounded-xl font-black text-base transition-all text-center ${
-                  tab.id === "新規投稿"
-                    ? pathname === tab.href
-                      ? "bg-black text-[#F4C300] shadow-md"
-                      : "bg-[#F4C300] text-black hover:bg-black hover:text-[#F4C300] shadow-sm"
-                    : pathname === tab.href
-                      ? "bg-black text-white"
-                      : "bg-white text-black border-2 border-black hover:bg-black hover:text-white"
+                  pathname === tab.href
+                    ? "bg-black text-white"
+                    : "bg-white text-black border-2 border-black hover:bg-black hover:text-white"
                 }`}
               >
                 {tab.label}

@@ -3,7 +3,7 @@
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export type CategoryType = "all" | "trending" | "new" | "ending-soon" | "following"
+export type CategoryType = "all" | "trending" | "new" | "ending-soon"
 
 interface CategoryTabsProps {
   activeCategory: CategoryType
@@ -15,7 +15,6 @@ const categories = [
   { value: "trending" as const, label: "注目", icon: "🔥" },
   { value: "new" as const, label: "新着", icon: "⭐" },
   { value: "ending-soon" as const, label: "終了間近", icon: "⏰" },
-  { value: "following" as const, label: "フォロー中", icon: "👥" },
 ]
 
 export function CategoryTabs({ activeCategory, onCategoryChange }: CategoryTabsProps) {

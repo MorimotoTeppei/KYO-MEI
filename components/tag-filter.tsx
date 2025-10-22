@@ -18,16 +18,16 @@ export function TagFilter({ availableTags, selectedTags, onTagToggle, onClearAll
     <div className="bg-white border-b py-3">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-gray-600 whitespace-nowrap">タグ:</span>
-          <ScrollArea className="w-full">
-            <div className="flex gap-2 pb-2">
+          <span className="text-sm font-bold text-gray-600 whitespace-nowrap shrink-0">タグ:</span>
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex gap-2 min-w-0">
               {availableTags.map((tag) => {
                 const isSelected = selectedTags.includes(tag)
                 return (
                   <Badge
                     key={tag}
                     variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer whitespace-nowrap transition-all ${
+                    className={`cursor-pointer whitespace-nowrap transition-all shrink-0 ${
                       isSelected
                         ? "bg-[#F4C300] text-black hover:bg-[#F4C300]/90 border-[#F4C300]"
                         : "hover:bg-gray-100"
@@ -39,12 +39,11 @@ export function TagFilter({ availableTags, selectedTags, onTagToggle, onClearAll
                 )
               })}
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
           {selectedTags.length > 0 && (
             <button
               onClick={onClearAll}
-              className="text-sm font-bold text-gray-500 hover:text-gray-700 whitespace-nowrap flex items-center gap-1 transition-colors"
+              className="text-sm font-bold text-gray-500 hover:text-gray-700 whitespace-nowrap flex items-center gap-1 transition-colors shrink-0"
             >
               <X className="w-4 h-4" />
               クリア

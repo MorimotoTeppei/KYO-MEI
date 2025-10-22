@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, Plus } from "lucide-react"
+import { ArrowUp } from "lucide-react"
 
 export function FloatingButtons() {
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -39,17 +38,6 @@ export function FloatingButtons() {
           <ArrowUp className="h-6 w-6" />
         </Button>
       )}
-
-      {/* クイック投稿ボタン */}
-      <Link href="/post">
-        <Button
-          size="icon"
-          className="h-16 w-16 rounded-full shadow-2xl bg-gradient-to-r from-[#F4C300] to-[#FFD700] hover:from-[#FFD700] hover:to-[#F4C300] text-black transition-all hover:scale-110 animate-pulse"
-          aria-label="お題を投稿"
-        >
-          <Plus className="h-8 w-8 stroke-[3]" />
-        </Button>
-      </Link>
     </div>
   )
 }
