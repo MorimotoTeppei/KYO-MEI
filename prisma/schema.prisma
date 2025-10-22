@@ -1,0 +1,203 @@
+// Prisma Schema for 大喜利Q&Aプラットフォーム (kyo-mei)
+// NextAuth.js + メール認証 + Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// NextAuth.js Models
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts Account[]
+  sessions Session[]
+  topics   Topic[]
+  answers  Answer[]
+  likes    Like[]
+
+  // フォロー関係（自己参照）
+  following Follow[] @relation("UserFollowing")
+  followers Follow[] @relation("UserFollowers")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// Application Models
+// ============================================
+
+model Topic {
+  id          String      @id @default(cuid())
+  number      Int         @unique @default(autoincrement())
+  title       String
+  description String?
+  subject     String
+  status      TopicStatus @default(ACTIVE)
+  startTime   DateTime    @default(now())
+  endTime     DateTime
+  viewCount   Int         @default(0)
+  authorId    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  author    User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  answers   Answer[]
+  likes     Like[]
+  topicTags TopicTag[]
+
+  @@index([authorId])
+  @@index([status])
+  @@index([subject])
+  @@index([endTime])
+  @@map("topics")
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  topicId    String
+  content    String   @db.Text
+  authorId   String?
+  authorName String
+  likeCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  topic  Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author User?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  likes  Like[]
+
+  @@index([topicId])
+  @@index([authorId])
+  @@index([topicId, likeCount])
+  @@map("answers")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  answerId  String
+  topicId   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answer Answer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  topic  Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, answerId])
+  @@index([topicId])
+  @@index([topicId, userId])
+  @@map("likes")
+}
+
+model Tag {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  topicTags TopicTag[]
+
+  @@index([usageCount])
+  @@map("tags")
+}
+
+model TopicTag {
+  id        String   @id @default(cuid())
+  topicId   String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  // Relations
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, tagId])
+  @@index([tagId])
+  @@map("topic_tags")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+// ============================================
+// Enums
+// ============================================
+
+enum TopicStatus {
+  ACTIVE
+  CLOSED
+}
