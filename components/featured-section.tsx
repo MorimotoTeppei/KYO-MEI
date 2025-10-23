@@ -49,7 +49,7 @@ export function FeaturedSection({ topics }: FeaturedSectionProps) {
               const subjectGradient = getSubjectColor(topic.subject)
               return (
                 <CarouselItem key={topic.id} className="md:basis-1/2 lg:basis-1/3">
-                  <Link href={`/topic/${topic.id}`} className="block group">
+                  <Link href={`/topic/${topic.dbId || topic.id}`} className="block group">
                     <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden h-full">
                       {/* 大きなサムネイル */}
                       <div className={`relative h-48 bg-gradient-to-br ${subjectGradient} flex flex-col items-center justify-center p-6`}>

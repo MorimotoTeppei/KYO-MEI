@@ -14,7 +14,7 @@ interface AnswerCardProps {
   rank?: number
   onLikeToggle?: (answerId: number, isAdding: boolean) => boolean // 成功したかどうかを返す
   remainingHearts?: number
-  currentUserId?: number // 現在のユーザーID
+  currentUserId?: string | number // 現在のユーザーID
   onReplySubmit?: (answerId: number, content: string) => void // 返信送信ハンドラー
 }
 
@@ -25,8 +25,8 @@ export const AnswerCard = forwardRef<HTMLDivElement, AnswerCardProps>(
     const [showReplies, setShowReplies] = useState(false)
     const [isAnimating, setIsAnimating] = useState(false)
 
-    // 自分の投稿かどうか
-    const isOwnAnswer = currentUserId !== undefined && answer.author.id === currentUserId
+    // 自分の投稿かどうか（文字列比較と数値比較の両方に対応）
+    const isOwnAnswer = currentUserId !== undefined && currentUserId !== null && String(answer.author.id) === String(currentUserId)
 
     // 親から渡されたanswerが更新された時に同期
     useState(() => {

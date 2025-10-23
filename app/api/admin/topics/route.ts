@@ -8,7 +8,7 @@ const createTopicSchema = z.object({
   title: z.string().min(1, "タイトルは必須です").max(200, "タイトルは200文字以内で入力してください"),
   description: z.string().max(1000, "説明は1000文字以内で入力してください").optional(),
   subject: z.string().min(1, "科目は必須です"),
-  endsAt: z.string().datetime().optional(),
+  endTime: z.string().datetime("有効な日時を入力してください"),
   tags: z.array(z.string()).optional(),
 })
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         subject: validatedData.subject,
         status: "ACTIVE",
-        endsAt: validatedData.endsAt ? new Date(validatedData.endsAt) : null,
+        endTime: new Date(validatedData.endTime),
         authorId: session.user.id,
       },
     })

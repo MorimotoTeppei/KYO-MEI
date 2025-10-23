@@ -2,49 +2,23 @@
 
 import type React from "react"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { generateAnonymousName } from "@/lib/anonymous-names"
 
-import { useState } from "react"
-
-// モックデータ：開催中のお題
-const activeTopics = [
-  {
-    id: 1,
-    number: 42,
-    title: "重力がなくなった世界で、物理学者が最初に言いそうなこと",
-    subject: "物理",
-    remainingTime: "2時間15分",
-    answerCount: 127,
-  },
-  {
-    id: 2,
-    number: 43,
-    title: "光合成ができるようになった人間が最初にやること",
-    subject: "生物",
-    remainingTime: "5時間42分",
-    answerCount: 89,
-  },
-  {
-    id: 3,
-    number: 44,
-    title: "タイムマシンを発明した科学者の最初の一言",
-    subject: "化学",
-    remainingTime: "1日3時間",
-    answerCount: 203,
-  },
-]
-
-// ランダムな匿名名前を生成
-const generateAnonymousName = () => {
-  const adjectives = ["賢い", "面白い", "冷静な", "熱い", "クールな", "ユニークな", "鋭い", "優しい"]
-  const nouns = ["パンダ", "ペンギン", "コアラ", "フクロウ", "キツネ", "ウサギ", "リス", "カワウソ"]
-  const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)]
-  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)]
-  return `${randomAdj}${randomNoun}`
+interface ActiveTopic {
+  id: string
+  number: number
+  title: string
+  subject: string
+  remainingTime: string
+  answerCount: number
 }
 
 export function PostForm() {
   const router = useRouter()
-  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null)
+  const [activeTopics, setActiveTopics] = useState<ActiveTopic[]>([])
+  const [isLoadingTopics, setIsLoadingTopics] = useState(true)
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
   const [isTopicConfirmed, setIsTopicConfirmed] = useState(false)
   const [answer, setAnswer] = useState("")
   const [anonymousName, setAnonymousName] = useState(generateAnonymousName())
@@ -53,6 +27,57 @@ export function PostForm() {
   const [showSuccess, setShowSuccess] = useState(false)
 
   const selectedTopic = activeTopics.find((topic) => topic.id === selectedTopicId)
+
+  // 開催中のお題を取得
+  useEffect(() => {
+    async function fetchActiveTopics() {
+      try {
+        const response = await fetch("/api/topics?status=ACTIVE&limit=10")
+        if (!response.ok) {
+          throw new Error("Failed to fetch topics")
+        }
+        const data = await response.json()
+
+        // APIレスポンスをActiveTopic型に変換
+        const formattedTopics: ActiveTopic[] = data.map((topic: any) => {
+          const now = new Date()
+          const endTime = new Date(topic.endTime)
+          const diffMs = endTime.getTime() - now.getTime()
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+          const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+          let remainingTime = ""
+          if (diffDays > 0) {
+            remainingTime = `${diffDays}日${diffHours % 24}時間`
+          } else if (diffHours > 0) {
+            remainingTime = `${diffHours}時間${diffMinutes}分`
+          } else if (diffMinutes > 0) {
+            remainingTime = `${diffMinutes}分`
+          } else {
+            remainingTime = "まもなく終了"
+          }
+
+          return {
+            id: topic.id,
+            number: topic.number,
+            title: topic.title,
+            subject: topic.subject,
+            remainingTime,
+            answerCount: topic.answerCount || 0,
+          }
+        })
+
+        setActiveTopics(formattedTopics)
+      } catch (error) {
+        console.error("Error fetching active topics:", error)
+      } finally {
+        setIsLoadingTopics(false)
+      }
+    }
+
+    fetchActiveTopics()
+  }, [])
 
   const regenerateName = () => {
     setAnonymousName(generateAnonymousName())
@@ -67,22 +92,32 @@ export function PostForm() {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // TODO: 実際のAPI呼び出しに置き換える
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const response = await fetch(`/api/topics/${selectedTopicId}/answers`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: answer,
+        }),
+      })
 
-    console.log("[v0] 投稿データ:", {
-      topicId: selectedTopicId,
-      answer,
-      anonymousName,
-    })
+      if (!response.ok) {
+        throw new Error("Failed to submit answer")
+      }
 
-    setIsSubmitting(false)
-    setShowSuccess(true)
+      setShowSuccess(true)
 
-    // 2秒後に大喜利ページに戻る
-    setTimeout(() => {
-      router.push("/")
-    }, 2000)
+      // 2秒後にお題詳細ページに移動
+      setTimeout(() => {
+        router.push(`/topic/${selectedTopicId}`)
+      }, 2000)
+    } catch (error) {
+      console.error("Error submitting answer:", error)
+      alert("回答の投稿に失敗しました")
+      setIsSubmitting(false)
+    }
   }
 
   if (showSuccess) {
@@ -113,8 +148,17 @@ export function PostForm() {
         {!isTopicConfirmed ? (
           <div className="space-y-3">
             <h2 className="text-lg font-bold text-black">開催中のお題を選択</h2>
-            <div className="space-y-3">
-              {activeTopics.map((topic) => (
+            {isLoadingTopics ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">読み込み中...</p>
+              </div>
+            ) : activeTopics.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">現在開催中のお題はありません</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activeTopics.map((topic) => (
                 <button
                   key={topic.id}
                   type="button"
@@ -140,8 +184,9 @@ export function PostForm() {
                   </div>
                 </button>
               ))}
-            </div>
-            {selectedTopicId && (
+              </div>
+            )}
+            {!isLoadingTopics && selectedTopicId && (
               <button
                 type="button"
                 onClick={() => setIsTopicConfirmed(true)}

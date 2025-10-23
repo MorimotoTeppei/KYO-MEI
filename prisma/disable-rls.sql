@@ -1,0 +1,14 @@
+-- Disable Row Level Security for development
+-- This allows Prisma to access the database without RLS restrictions
+
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.accounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sessions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.verification_tokens DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topics DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.answers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.likes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tags DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.topic_tags DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.follows DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public._prisma_migrations DISABLE ROW LEVEL SECURITY;
