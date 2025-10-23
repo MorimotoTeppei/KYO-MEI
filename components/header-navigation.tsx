@@ -7,6 +7,11 @@ export function HeaderNavigation() {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
+  // 認証画面と管理者画面ではヘッダーを非表示
+  if (pathname?.startsWith("/auth") || pathname?.startsWith("/admin") || pathname?.startsWith("/onboarding")) {
+    return null
+  }
+
   const tabs = [
     { id: "大喜利", label: "大喜利", href: "/" },
     { id: "設定", label: "設定", href: "/settings" },
