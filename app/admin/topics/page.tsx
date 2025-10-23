@@ -6,6 +6,9 @@ import prisma from "@/lib/prisma"
 import { format } from "date-fns"
 import { ja } from "date-fns/locale"
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 export default async function TopicsManagementPage() {
   // すべてのお題を取得
   const topics = await prisma.topic.findMany({
@@ -98,10 +101,10 @@ export default async function TopicsManagementPage() {
                             locale: ja,
                           })}
                         </span>
-                        {topic.endsAt && (
+                        {topic.endTime && (
                           <span>
                             終了日:{" "}
-                            {format(new Date(topic.endsAt), "yyyy/MM/dd HH:mm", {
+                            {format(new Date(topic.endTime), "yyyy/MM/dd HH:mm", {
                               locale: ja,
                             })}
                           </span>

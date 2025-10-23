@@ -2,6 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileText, Users, Heart, TrendingUp } from "lucide-react"
 import prisma from "@/lib/prisma"
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboard() {
   // 統計情報を取得
   const [topicsCount, usersCount, answersCount, likesCount] = await Promise.all([

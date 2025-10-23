@@ -1,14 +1,15 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Trophy, Hash, TrendingUp } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 
 interface TopUser {
-  id: number
+  id: string
   name: string
-  avatar?: string
+  avatar?: string | null
   answerCount: number
   likeCount: number
 }
@@ -18,23 +19,6 @@ interface TopTag {
   count: number
   trend: "up" | "stable" | "down"
 }
-
-// サンプルランキングデータ
-const topUsers: TopUser[] = [
-  { id: 1, name: "お笑い次郎", answerCount: 156, likeCount: 2341 },
-  { id: 2, name: "コメディ花子", answerCount: 134, likeCount: 1987 },
-  { id: 3, name: "ユーモアマスター", answerCount: 128, likeCount: 1756 },
-  { id: 4, name: "笑いの達人", answerCount: 112, likeCount: 1543 },
-  { id: 5, name: "科学太郎", answerCount: 98, likeCount: 1234 },
-]
-
-const topTags: TopTag[] = [
-  { name: "物理", count: 42, trend: "up" },
-  { name: "AI", count: 38, trend: "up" },
-  { name: "情報", count: 35, trend: "stable" },
-  { name: "宇宙", count: 28, trend: "up" },
-  { name: "SF", count: 24, trend: "stable" },
-]
 
 const getRankColor = (rank: number) => {
   switch (rank) {
@@ -64,17 +48,54 @@ const getTrendIcon = (trend: TopTag["trend"]) => {
 }
 
 export function RankingWidget() {
+  const [topUsers, setTopUsers] = useState<TopUser[]>([])
+  const [topTags, setTopTags] = useState<TopTag[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchRankings() {
+      try {
+        const response = await fetch("/api/rankings")
+        if (!response.ok) {
+          throw new Error("Failed to fetch rankings")
+        }
+        const data = await response.json()
+        setTopUsers(data.topUsers || [])
+        setTopTags(data.topTags || [])
+      } catch (error) {
+        console.error("Error fetching rankings:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchRankings()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg p-4 border">
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-500">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* トップ大喜利師ランキング */}
-      <div className="bg-white rounded-lg p-4 border">
-        <div className="flex items-center gap-2 mb-4">
-          <Trophy className="w-5 h-5 text-[#F4C300]" />
-          <h4 className="text-sm font-black text-gray-900">週間トップ大喜利師</h4>
-        </div>
+      {topUsers.length > 0 && (
+        <div className="bg-white rounded-lg p-4 border">
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="w-5 h-5 text-[#F4C300]" />
+            <h4 className="text-sm font-black text-gray-900">週間トップ大喜利師</h4>
+          </div>
 
-        <div className="space-y-3">
-          {topUsers.map((user, index) => {
+          <div className="space-y-3">
+            {topUsers.map((user, index) => {
             const rank = index + 1
             return (
               <div
@@ -85,7 +106,7 @@ export function RankingWidget() {
                   {getRankIcon(rank)}
                 </div>
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar || undefined} alt={user.name} />
                   <AvatarFallback className="text-xs">{user.name[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
@@ -101,10 +122,12 @@ export function RankingWidget() {
           })}
         </div>
       </div>
+      )}
 
-      <Separator />
+      {topUsers.length > 0 && topTags.length > 0 && <Separator />}
 
       {/* バズってるタグ */}
+      {topTags.length > 0 && (
       <div className="bg-white rounded-lg p-4 border">
         <div className="flex items-center gap-2 mb-4">
           <Hash className="w-5 h-5 text-purple-500" />
@@ -131,6 +154,7 @@ export function RankingWidget() {
           ))}
         </div>
       </div>
+      )}
     </div>
   )
 }

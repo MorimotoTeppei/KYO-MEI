@@ -48,7 +48,7 @@ export function TopicCard({ topic }: TopicCardProps) {
     <HoverCard openDelay={300} closeDelay={100}>
       <HoverCardTrigger asChild>
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Link href={`/topic/${topic.id}`} className="block group">
+          <Link href={`/topic/${topic.dbId || topic.id}`} className="block group">
             <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative">
               {/* サムネイル部分 */}
               <div className={`relative h-32 ${subjectColor} flex items-center justify-center`}>

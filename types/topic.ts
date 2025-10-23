@@ -2,6 +2,7 @@ import type { Answer } from "./answer"
 
 export interface Topic {
   id: number
+  dbId?: string // データベースの実際のID (cuid)
   number: number
   title: string
   subject: string

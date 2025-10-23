@@ -8,13 +8,13 @@ interface MyAnswersSectionProps {
   myAnswers: Answer[]
   onLikeToggle?: (answerId: number, isAdding: boolean) => boolean
   remainingHearts?: number
-  currentUserId: number
+  currentUserId: string | number
   onReplySubmit?: (answerId: number, content: string) => void
 }
 
 export function MyAnswersSection({ myAnswers, onLikeToggle, remainingHearts, currentUserId, onReplySubmit }: MyAnswersSectionProps) {
-  // 現在のユーザーの回答のみをフィルター
-  const filteredMyAnswers = myAnswers.filter((answer) => answer.author.id === currentUserId)
+  // 現在のユーザーの回答のみをフィルター（文字列比較と数値比較の両方に対応）
+  const filteredMyAnswers = myAnswers.filter((answer) => String(answer.author.id) === String(currentUserId))
 
   if (filteredMyAnswers.length === 0) {
     return null

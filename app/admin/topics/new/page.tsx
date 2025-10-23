@@ -24,7 +24,7 @@ export default function NewTopicPage() {
     title: "",
     description: "",
     subject: "物理",
-    endsAt: "",
+    endTime: "",
     tags: "",
   })
 
@@ -42,7 +42,7 @@ export default function NewTopicPage() {
           title: formData.title,
           description: formData.description || undefined,
           subject: formData.subject,
-          endsAt: formData.endsAt ? new Date(formData.endsAt).toISOString() : undefined,
+          endTime: formData.endTime ? new Date(formData.endTime).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // デフォルト7日後
           tags: formData.tags
             ? formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
             : [],
@@ -151,18 +151,18 @@ export default function NewTopicPage() {
 
             {/* 終了日時 */}
             <div>
-              <Label htmlFor="endsAt" className="text-base font-bold">
+              <Label htmlFor="endTime" className="text-base font-bold">
                 終了日時（オプション）
               </Label>
               <Input
-                id="endsAt"
+                id="endTime"
                 type="datetime-local"
-                value={formData.endsAt}
-                onChange={(e) => setFormData({ ...formData, endsAt: e.target.value })}
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                 className="mt-2"
               />
               <p className="text-sm text-gray-500 mt-1">
-                設定しない場合は無期限で開催されます
+                設定しない場合は7日後に自動設定されます
               </p>
             </div>
 

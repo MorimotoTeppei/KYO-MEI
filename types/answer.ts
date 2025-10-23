@@ -2,6 +2,7 @@ import type { Reply } from "./reply"
 
 export interface Answer {
   id: number
+  dbId?: string // データベースの実際のID (cuid)
   topicId: number
   content: string
   author: {
