@@ -19,7 +19,8 @@ import {
   Camera,
   Check,
   Eye,
-  EyeOff
+  EyeOff,
+  LogOut
 } from "lucide-react"
 import { useSettings } from "@/hooks/useSettings"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -84,9 +85,56 @@ export default function SettingsPage() {
     setMounted(true)
   }, [])
 
-  const handleSave = () => {
-    setSavedNotification(true)
-    setTimeout(() => setSavedNotification(false), 2000)
+  // サーバーからユーザー情報を取得してローカルストレージと同期
+  useEffect(() => {
+    const syncUserProfile = async () => {
+      try {
+        const response = await fetch("/api/users/me")
+        if (response.ok) {
+          const user = await response.json()
+          // サーバーのデータでローカルストレージを更新（ローカルの設定は保持）
+          if (user.name || user.image) {
+            updateSettings({
+              profile: {
+                ...settings.profile,
+                name: user.name || settings.profile.name,
+                email: user.email || settings.profile.email,
+                avatar: user.image || settings.profile.avatar,
+              },
+            })
+          }
+        }
+      } catch (error) {
+        console.error("Failed to sync user profile:", error)
+      }
+    }
+
+    if (isLoaded) {
+      syncUserProfile()
+    }
+  }, [isLoaded])
+
+  const handleSave = async () => {
+    // サーバーに保存
+    try {
+      const response = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: settings.profile.name,
+          image: settings.profile.avatar,
+        }),
+      })
+
+      if (response.ok) {
+        setSavedNotification(true)
+        setTimeout(() => setSavedNotification(false), 2000)
+      }
+    } catch (error) {
+      console.error("Failed to save settings:", error)
+    }
   }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -345,6 +393,33 @@ export default function SettingsPage() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+
+        {/* ログアウトセクション */}
+        <section className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <LogOut className="w-5 h-5 text-red-500" />
+            <h2 className="text-2xl font-black text-gray-900">アカウント</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 mb-2">ログアウト</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                現在のセッションからログアウトします。再度ログインするにはメール認証が必要です。
+              </p>
+              <form action="/api/auth/signout" method="POST">
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  ログアウト
+                </Button>
+              </form>
             </div>
           </div>
         </section>

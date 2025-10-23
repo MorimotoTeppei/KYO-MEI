@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { HeaderNavigation } from "@/components/header-navigation"
+import { SessionProvider } from "@/app/providers/session-provider"
 import "./globals.css"
 
 const notoSansJP = Noto_Sans_JP({
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`font-sans ${notoSansJP.variable} ${GeistMono.variable}`}>
-        <HeaderNavigation />
-        <Suspense fallback={null}>{children}</Suspense>
-        <Analytics />
+        <SessionProvider>
+          <HeaderNavigation />
+          <Suspense fallback={null}>{children}</Suspense>
+          <Analytics />
+        </SessionProvider>
       </body>
     </html>
   )
