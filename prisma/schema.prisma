@@ -2,8 +2,9 @@
 // NextAuth.js + メール認証 + Supabase PostgreSQL
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "../lib/generated/prisma"
+  binaryTargets = ["native", "darwin-arm64", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
