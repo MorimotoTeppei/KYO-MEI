@@ -1,4 +1,4 @@
-# 響明（Kyo-Mei）
+# 共鳴（Kyo-Mei）
 
 <div align="center">
 
@@ -26,7 +26,12 @@
 - [使い方](#-使い方)
 - [セットアップ](#-セットアップ)
 - [技術的な工夫](#-技術的な工夫)
-- [今後の展望](#-今後の展望)
+
+---
+
+## 🚀 デプロイURL
+
+kyo-mei.vercel.app
 
 ---
 
@@ -679,5 +684,4 @@ export const config = {
 - [バックエンド実装詳細](./docs/BACKEND_IMPLEMENTATION.md)
 - [ホームページ仕様](./docs/HOME_PAGE_SPEC.md)
 - [お題詳細ページ仕様](./docs/DETAIL_PAGE_SPEC.md)
-
 
